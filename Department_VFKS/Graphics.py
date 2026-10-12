@@ -10,11 +10,7 @@ dt = np.dtype([
     ('p_z', np.float64)
 ])
 
-dt1 = np.dtype([
-    ('v_x', np.float64),
-    ('v_y', np.float64),
-    ('v_z', np.float64)
-])
+dt1 = np.dtype([('v_pr', np.float64)])
 
 data = np.fromfile('time_pot_energy_kin_energy_pulse.bin', dtype=dt)
 data_v = np.fromfile('N_velocity.bin', dtype=dt1)
@@ -26,10 +22,11 @@ E = U + K
 p_x = data['p_x']
 p_y = data['p_y']
 p_z = data['p_z']
-v_x = data_v['v_x']
-v_y = data_v['v_y']
-v_z = data_v['v_z']
-v = np.sqrt(v_x ** 2 + v_y ** 2 + v_z ** 2)
+# v_x = data_v['v_x']
+# v_y = data_v['v_y']
+# v_z = data_v['v_z']
+v_pr = data_v['v_pr']
+# v = np.sqrt(v_x ** 2 + v_y ** 2 + v_z ** 2)
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
@@ -65,12 +62,21 @@ plt.show()
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
-ax.hist(v_x, bins=30, density=True, alpha=0.5, color='C0', label=r'$v_x$')
-ax.hist(v_y, bins=30, density=True, alpha=0.5, color='C1', label=r'$v_y$')
-ax.hist(v_z, bins=30, density=True, alpha=0.5, color='C2', label=r'$v_z$')
+# ax.hist(v_x, bins=30, density=True, alpha=0.5, color='C0', label=r'$v_x$')
+# ax.hist(v_y, bins=30, density=True, alpha=0.5, color='C1', label=r'$v_y$')
+# ax.hist(v_z, bins=30, density=True, alpha=0.5, color='C2', label=r'$v_z$')
 
-ax.set_xlabel(r'$v, м/с$')
-ax.set_ylabel(r'$p(v)$')
+_, bins, _ = ax.hist(v_pr, bins=30, density=True, alpha=0.5, color='C0', label=r'Результаты моделирования')
+
+N = 2 ** 3
+T = 2 * np.mean(K) / (3 * N)
+v_teor = np.linspace(bins[0], bins[-1], 300)
+f_v_teor = (1.0 / np.sqrt(2.0 * np.pi * T)) * np.exp(- (v_teor ** 2) / (2.0 * T))
+
+ax.plot(v_teor, f_v_teor, color='C1', linestyle='-', lw=2, label=r'Теоретическая зависимость')
+
+ax.set_xlabel(r'$v_i, ~м/с$')
+ax.set_ylabel(r'$p(v_i)$')
 ax.grid(True, which='major', color='black', linestyle=':', linewidth=1, alpha=0.7)
 ax.minorticks_on()
 ax.grid(True, which='minor', color='gray', linestyle=':', linewidth=0.7, alpha=0.7)
@@ -78,13 +84,23 @@ ax.legend()
 ax.tick_params(which='both', direction='in')
 
 plt.show()
+
+counts, bins = np.histogram(v_pr, bins=30, density=True)
+v_centers = (bins[:-1] + bins[1:]) / 2
+
+X = v_centers ** 2
+Y = np.log(counts)
+X_teor = np.linspace(0, max(X), 100)
+Y_teor = np.log(1.0 / np.sqrt(2.0 * np.pi * T)) - (1.0 / (2.0 * T)) * X_teor
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
-ax.hist(v, bins=30, density=True, alpha=0.5, color='C0', label=r'$|v|$')
+ax.scatter(X, Y, color='C0', marker='^', label=r'Результаты моделирования')
+ax.plot(X_teor, Y_teor, color='C1', linestyle='-', lw=2, label=r'Теоретическая зависимость')
 
-ax.set_xlabel(r'$v, м/с$')
-ax.set_ylabel(r'$p(v)$')
+
+ax.set_xlabel(r'$v_i^2, м^2/с^2$')
+ax.set_ylabel(r'$\ln{p(v_i)}$')
 ax.grid(True, which='major', color='black', linestyle=':', linewidth=1, alpha=0.7)
 ax.minorticks_on()
 ax.grid(True, which='minor', color='gray', linestyle=':', linewidth=0.7, alpha=0.7)
@@ -92,3 +108,16 @@ ax.legend()
 ax.tick_params(which='both', direction='in')
 
 plt.show()
+
+# fig, ax = plt.subplots(1, 1, figsize=(10, 7))
+# ax.hist(v, bins=30, density=True, alpha=0.5, color='C0', label=r'$|v|$')
+#
+# ax.set_xlabel(r'$v, м/с$')
+# ax.set_ylabel(r'$p(v)$')
+# ax.grid(True, which='major', color='black', linestyle=':', linewidth=1, alpha=0.7)
+# ax.minorticks_on()
+# ax.grid(True, which='minor', color='gray', linestyle=':', linewidth=0.7, alpha=0.7)
+# ax.legend()
+# ax.tick_params(which='both', direction='in')
+#
+# plt.show()

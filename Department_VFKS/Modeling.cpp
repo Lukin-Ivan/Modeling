@@ -45,7 +45,7 @@ struct Particle
     Vec3 f;
 };
 
-double compute_forces(std::vector<Particle>& particles, double box_len, double r_cut = 3){
+double compute_forces(std::vector<Particle>& particles, double box_len, double r_cut = 1000){
     double pot_energy = 0.0;
     for (auto& p : particles){
         p.f = {0.0, 0.0, 0.0}; // обнуляем предыдущие силы
@@ -140,7 +140,7 @@ std::vector<Particle> random_speed(std::vector<Particle>& particles,int n_per_si
 }
 
 int main(){
-    int n_per_side = 15; // частиц на оси
+    int n_per_side = 2; // частиц на оси
     double density = 1.0; // плотность
 
     int N = n_per_side * n_per_side * n_per_side; // частиц всего
@@ -149,13 +149,14 @@ int main(){
     std::vector<Particle> particles(N); // создание вектора из N частиц
 
     std::ofstream file("time_pot_energy_kin_energy_pulse.bin", std::ios::binary); // открытие файла для записи энергии и импульса
-    std::ofstream file_v("N_velocity.bin", std::ios::binary);
+    std::ofstream file_v("N_velocity1.bin", std::ios::binary);
+    std::ofstream file_coord("Coordinates.xyz");
 
     particles = generate_position(particles, n_per_side, density); // расставление частиц в центр кубиков
-    particles = random_speed(particles, n_per_side); // генерация рандомных скоростей согласно распределению Гаусса
+    // particles = random_speed(particles, n_per_side); // генерация рандомных скоростей согласно распределению Гаусса
 
-    double delta_t = 0.01; // шаг по времени
-    double total_time = 10; // общее время в секундах
+    double delta_t = 0.0001; // шаг по времени
+    double total_time = 10000; // общее время в секундах
     int total_steps = total_time / delta_t; // общее количество шагов
     double m = 1.0; // масса одной частицы
 
@@ -166,23 +167,33 @@ int main(){
             p.r = p.r + p.v * delta_t + a * delta_t * delta_t / 2.0; // первый шаг схемы Верле, r(t+dt)
             p.v = p.v + a * delta_t / 2.0; // v(t+dt/2)
         }
-        pbc(particles, box_len); // расчет сил в момент времени t+dt
+        
         pot_energy = compute_forces(particles, box_len);
         for (auto& p : particles){
             Vec3 a = p.f / m;
             p.v = p.v + a * delta_t / 2.0; // второй шаг схемы Верле, v(t+dt)
         }
-        if (step % (total_steps / 1000) == 0 && step * delta_t > 1.5){
+        pbc(particles, box_len); // расчет сил в момент времени t+dt
+        // if (step % (total_steps / 1000) == 0 && step * delta_t > 1.5){
+        if (step % (total_steps / 1000) == 0){
             std::array<double, 6> record = compute_parametrs(particles, step, pot_energy, m, delta_t);
             file.write(reinterpret_cast<const char*>(record.data()), sizeof(double) * record.size());
-        }
-        if (step == total_steps / 2){
+            file_coord << N << "\n";
+            file_coord << "time = " << step * delta_t << "\n";
             for (int i = 0; i < N; ++i){
-                std::array<double, 3> velocity = {particles[i].v.x, particles[i].v.y, particles[i].v.z};
-                file_v.write(reinterpret_cast<const char*>(velocity.data()), sizeof(double) * velocity.size());
+                file_coord << particles[i].r.x << " " << particles[i].r.y << " " << particles[i].r.z << "\n";
+            }
+        }
+        if (step % (total_steps / 1000) == 0){
+            for (int i = 0; i < N; ++i){
+                // std::array<double, 3> velocity = {particles[i].v.x, particles[i].v.y, particles[i].v.z};
+                file_v.write(reinterpret_cast<const char*>(&particles[i].v.x), sizeof(double));
+                file_v.write(reinterpret_cast<const char*>(&particles[i].v.y), sizeof(double));
+                file_v.write(reinterpret_cast<const char*>(&particles[i].v.z), sizeof(double));
             }
         }
     }
     file.close();
     file_v.close();
+    file_coord.close();
 }
