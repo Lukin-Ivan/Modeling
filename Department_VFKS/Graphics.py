@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 
 dt = np.dtype([
     ('time', np.float64),
@@ -7,7 +8,8 @@ dt = np.dtype([
     ('kin_energy', np.float64),
     ('p_x', np.float64),
     ('p_y', np.float64),
-    ('p_z', np.float64)
+    ('p_z', np.float64),
+    ('r_rms', np.float64)
 ])
 
 dt1 = np.dtype([('v_pr', np.float64)])
@@ -22,6 +24,7 @@ E = U + K
 p_x = data['p_x']
 p_y = data['p_y']
 p_z = data['p_z']
+r2 = data['r_rms']
 # v_x = data_v['v_x']
 # v_y = data_v['v_y']
 # v_z = data_v['v_z']
@@ -68,7 +71,7 @@ fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
 _, bins, _ = ax.hist(v_pr, bins=30, density=True, alpha=0.5, color='C0', label=r'Результаты моделирования')
 
-N = 2 ** 3
+N = 10 ** 3
 T = 2 * np.mean(K) / (3 * N)
 v_teor = np.linspace(bins[0], bins[-1], 300)
 f_v_teor = (1.0 / np.sqrt(2.0 * np.pi * T)) * np.exp(- (v_teor ** 2) / (2.0 * T))
@@ -98,7 +101,6 @@ fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 ax.scatter(X, Y, color='C0', marker='^', label=r'Результаты моделирования')
 ax.plot(X_teor, Y_teor, color='C1', linestyle='-', lw=2, label=r'Теоретическая зависимость')
 
-
 ax.set_xlabel(r'$v_i^2, м^2/с^2$')
 ax.set_ylabel(r'$\ln{p(v_i)}$')
 ax.grid(True, which='major', color='black', linestyle=':', linewidth=1, alpha=0.7)
@@ -108,6 +110,45 @@ ax.legend()
 ax.tick_params(which='both', direction='in')
 
 plt.show()
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 7))
+
+ax.plot(t, r2, color='C0', linestyle='-', lw=2, label=r'Результаты моделирования')
+res = scipy.stats.linregress(t, r2)
+ax.plot(t, res.slope * t + res.intercept, color='C1', linestyle='-', lw=2, label=r'Линейная аппроксимация')
+
+ax.set_xlabel(r'$t,~с$')
+ax.set_ylabel(r'$r^2, ~м^2$')
+ax.grid(True, which='major', color='black', linestyle=':', linewidth=1, alpha=0.7)
+ax.minorticks_on()
+ax.grid(True, which='minor', color='gray', linestyle=':', linewidth=0.7, alpha=0.7)
+ax.legend()
+ax.tick_params(which='both', direction='in')
+plt.show()
+
+D = res.slope / 6
+
+print("D =", D, 'м^2/с')
+print("R^2 =", res.rvalue ** 2)
+
+v_mean = (8 * T / np.pi) ** 0.5
+Lambda = 3 * D / v_mean
+sigma = v_mean / (3 * 2 ** 0.5 * D)
+
+print(T)
+
+print('Lambda =', Lambda)
+print('sigma =', sigma)
+
+d = (4.0 / T)**(1/12)
+sigma = np.pi * d ** 2
+Lambda = 1 / (2 ** 0.5 * sigma)
+print('Lambda =', Lambda)
+print('sigma =', sigma)
+Lambda = 0.05 * v_mean
+sigma = 1 / (2 ** 0.5 * Lambda)
+print('Lambda =', Lambda)
+print('sigma =', sigma)
 
 # fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 # ax.hist(v, bins=30, density=True, alpha=0.5, color='C0', label=r'$|v|$')

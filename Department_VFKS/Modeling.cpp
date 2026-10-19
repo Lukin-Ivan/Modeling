@@ -43,9 +43,17 @@ struct Particle
     Vec3 r;
     Vec3 v;
     Vec3 f;
+    Vec3 r0;
+    Vec3 wrapped(double box_len) const{
+        Vec3 rw = r;
+        rw.x -= box_len * std::floor(rw.x / box_len);
+        rw.y -= box_len * std::floor(rw.y / box_len);
+        rw.z -= box_len * std::floor(rw.z / box_len);
+        return rw;
+    }
 };
 
-double compute_forces(std::vector<Particle>& particles, double box_len, double r_cut = 1000){
+double compute_forces(std::vector<Particle>& particles, double box_len, double r_cut = 3){
     double pot_energy = 0.0;
     for (auto& p : particles){
         p.f = {0.0, 0.0, 0.0}; // обнуляем предыдущие силы
@@ -76,20 +84,24 @@ void pbc(std::vector<Particle>& particles, double box_len){
     }
 }
 
-std::array<double, 6> compute_parametrs(std::vector<Particle>& particles, int& step,double& pot_energy, double& m, double& delta_t){
+std::array<double, 7> compute_parametrs(std::vector<Particle>& particles, int& step,double& pot_energy, double& m, double& delta_t){
     double kin_energy = 0.0;
     double p_x = 0.0;
     double p_y = 0.0;
     double p_z = 0.0;
     double p_rms = 0.0;
+    double r_rms = 0.0;
     for (auto& p : particles){
         kin_energy += m * p.v.norm() / 2.0; // расчет кинетической энергии
         p_x += m * p.v.x;
         p_y += m * p.v.y;
         p_z += m * p.v.z;
         p_rms += m * p.v.norm();
+        Vec3 dr = p.r - p.r0;
+        r_rms += dr.norm();
     }
-    return {step * delta_t, pot_energy, kin_energy, p_x / p_rms, p_y / p_rms, p_z / p_rms};
+    r_rms/=particles.size();
+    return {step * delta_t, pot_energy, kin_energy, p_x / p_rms, p_y / p_rms, p_z / p_rms, r_rms};
 }
 
 std::vector<Particle> generate_position(std::vector<Particle>& particles,int n_per_side, double density){
@@ -140,7 +152,7 @@ std::vector<Particle> random_speed(std::vector<Particle>& particles,int n_per_si
 }
 
 int main(){
-    int n_per_side = 2; // частиц на оси
+    int n_per_side = 10; // частиц на оси
     double density = 1.0; // плотность
 
     int N = n_per_side * n_per_side * n_per_side; // частиц всего
@@ -149,14 +161,14 @@ int main(){
     std::vector<Particle> particles(N); // создание вектора из N частиц
 
     std::ofstream file("time_pot_energy_kin_energy_pulse.bin", std::ios::binary); // открытие файла для записи энергии и импульса
-    std::ofstream file_v("N_velocity1.bin", std::ios::binary);
+    std::ofstream file_v("N_velocity.bin", std::ios::binary);
     std::ofstream file_coord("Coordinates.xyz");
 
     particles = generate_position(particles, n_per_side, density); // расставление частиц в центр кубиков
     // particles = random_speed(particles, n_per_side); // генерация рандомных скоростей согласно распределению Гаусса
 
-    double delta_t = 0.0001; // шаг по времени
-    double total_time = 10000; // общее время в секундах
+    double delta_t = 0.001; // шаг по времени
+    double total_time = 10; // общее время в секундах
     int total_steps = total_time / delta_t; // общее количество шагов
     double m = 1.0; // масса одной частицы
 
@@ -173,24 +185,23 @@ int main(){
             Vec3 a = p.f / m;
             p.v = p.v + a * delta_t / 2.0; // второй шаг схемы Верле, v(t+dt)
         }
-        pbc(particles, box_len); // расчет сил в момент времени t+dt
-        // if (step % (total_steps / 1000) == 0 && step * delta_t > 1.5){
-        if (step % (total_steps / 1000) == 0){
-            std::array<double, 6> record = compute_parametrs(particles, step, pot_energy, m, delta_t);
-            file.write(reinterpret_cast<const char*>(record.data()), sizeof(double) * record.size());
-            file_coord << N << "\n";
-            file_coord << "time = " << step * delta_t << "\n";
-            for (int i = 0; i < N; ++i){
-                file_coord << particles[i].r.x << " " << particles[i].r.y << " " << particles[i].r.z << "\n";
+        if (step * delta_t == 6){
+            for (auto& p : particles) {
+                p.r0 = p.r;
             }
         }
-        if (step % (total_steps / 1000) == 0){
-            for (int i = 0; i < N; ++i){
-                // std::array<double, 3> velocity = {particles[i].v.x, particles[i].v.y, particles[i].v.z};
-                file_v.write(reinterpret_cast<const char*>(&particles[i].v.x), sizeof(double));
-                file_v.write(reinterpret_cast<const char*>(&particles[i].v.y), sizeof(double));
-                file_v.write(reinterpret_cast<const char*>(&particles[i].v.z), sizeof(double));
-            }
+        if (step % (total_steps / total_steps) == 0 && step * delta_t >= 6){
+            std::array<double, 7> record = compute_parametrs(particles, step, pot_energy, m, delta_t);
+            file.write(reinterpret_cast<const char*>(record.data()), sizeof(double) * record.size());
+            // file_coord << N << "\n";
+            // file_coord << "time = " << step * delta_t << "\n";
+            // for (int i = 0; i < N; ++i){
+            //     Vec3 rw = particles[i].wrapped(box_len);
+            //     file_coord << rw.x << " " << rw.y << " " << rw.z << "\n";
+            //     file_v.write(reinterpret_cast<const char*>(&particles[i].v.x), sizeof(double));
+            //     file_v.write(reinterpret_cast<const char*>(&particles[i].v.y), sizeof(double));
+            //     file_v.write(reinterpret_cast<const char*>(&particles[i].v.z), sizeof(double));
+            // }
         }
     }
     file.close();
