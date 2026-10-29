@@ -1,0 +1,12 @@
+{
+    "output_file_name_parametrs": "data/parametrs_N_216_density_10_t_10_start_record_2_dt_1e-05.csv",
+    "output_file_name_velocities": "data/velocities_N_216_density_10_t_10_start_record_2_dt_1e-05.csv",
+    "output_file_name_coordinates": "data/coordinates_N_216_density_10_t_10_start_record_2_dt_1e-05.xyz",
+    "n_per_side": 6,
+    "total_time": 10,
+    "start_record_time": 2,
+    "delta_t": 1e-05,
+    "delta_t_output": 0.001,
+    "density": 10,
+    "m": 1.0
+}

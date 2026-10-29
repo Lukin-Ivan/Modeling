@@ -1,0 +1,11 @@
+{
+    "output_filename": "data/rk4_t_100_dt_0.01_w_1.0_gamma_10.0_x0_10_v0_10.bin",
+    "solver_type": "rk4",
+    "t": 100,
+    "dt": 0.01,
+    "dt_output": 0.1,
+    "x_0": 10,
+    "v_0": 10,
+    "omega": 1.0,
+    "gamma": 10.0
+}

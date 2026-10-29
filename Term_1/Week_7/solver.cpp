@@ -61,8 +61,7 @@ double calculate_energy(double x, double v, double omega){
     return (v * v) / 2 + omega * omega * (1 - std::cos(x));
 }
 
-void write_buffer(std::ofstream& file, const std::string& file_type, double omega, 
-                  const std::vector<std::array<double, 3>>& buffer, int count) {
+void write_buffer(std::ofstream& file, const std::string& file_type, double omega, const std::vector<std::array<double, 3>>& buffer, int count) {
     for (int k = 0; k < count; ++k) {
         double t = buffer[k][0];
         double x = buffer[k][1];
@@ -107,7 +106,7 @@ int main(int argc, char* argv[]){
 
     int frames = t / dt; // общее количество итераций рассчета
     int output = dt_output / dt; // общее количество записанных данных
-    const int BUFFER_SIZE = 1000;
+    int BUFFER_SIZE = 1000;
     std::vector<std::array<double, 3>> buffer(BUFFER_SIZE);
     Vec2 current {x_0, v_0};
     int j = 0;
