@@ -8,7 +8,7 @@ std::pair<double, double> eyler_scheme(const std::pair<double, double>& vec, con
 }
 
 int main(){
-    double dt = 0.0000001; // шаг расчетов, не меньше 0.01, иначе хрень
+    double dt = 0.0000001; // шаг расчетов, не меньше 0.01
     double dt_output = 0.01; // шаг записи
     double x_0 = 1.0;
     double v_0 = 1.0;

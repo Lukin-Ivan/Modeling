@@ -1,0 +1,10 @@
+{
+    "output_filename": "data/heun_t_100_dt_0.001_w_1.0_x0_2_v0_0.bin",
+    "solver_type": "heun",
+    "t": 100,
+    "dt": 0.001,
+    "dt_output": 0.01,
+    "x_0": 2,
+    "v_0": 0,
+    "omega": 1.0
+}
